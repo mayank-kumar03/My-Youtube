@@ -248,7 +248,11 @@ const changeCurrentPassword=asyncHandler(async(req,res) =>{
 const getCurrentUser=asyncHandler(async(req,res)=>{
   return res
   .status(200)
-  .json(200,req.user,"current user fetched successfully")
+  .json({
+    user_id: req.user,
+    flag: true
+  })
+  // .json(200,req.user,"current user fetched successfully")
 })
 //Tips->If we want to update only userprofile then write a seprate handler for this otherwise all
 //all data save again again
