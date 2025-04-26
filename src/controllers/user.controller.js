@@ -157,7 +157,7 @@ const logoutUser=asyncHandler(async(req,res)=>{
   await User.findByIdAndUpdate(
     req.user._id,
     {
-      $unset:{
+      $set:{
         refreshToken:1,
       }
     },
@@ -248,15 +248,11 @@ const changeCurrentPassword=asyncHandler(async(req,res) =>{
 const getCurrentUser=asyncHandler(async(req,res)=>{
   return res
   .status(200)
-<<<<<<< HEAD
   .json({
     user_id: req.user,
     flag: true
   })
   // .json(200,req.user,"current user fetched successfully")
-=======
-  .json(new ApiResponse(200,{},"current user fetched successfully!...."))
->>>>>>> 7f239d794ad846b788d9157dd79e83b7903cce7c
 })
 //Tips->If we want to update only userprofile then write a seprate handler for this otherwise all
 //all data save again again
