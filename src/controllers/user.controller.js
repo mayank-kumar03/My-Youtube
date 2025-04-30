@@ -25,83 +25,69 @@ const generateAccessAndRefereshTokens=async(userId)=>
 
 
 
-const registerUser=asyncHandler(async(req,res)=>{
-      
-      
-      //get details from user
-      const {fullName,email,username,password}=req.body
-      // if(fullName==""){
-      //   throw new ApiError(400,"fullname is required")
-      // }
+const registerUser = asyncHandler(async (req, res) => {
+    // Get details from user
+    const { fullName, email, username, password } = req.body;
+    console.log("Request Body:", req.body);
 
-      //validation
-      if(
-        [fullName,email,username,password].some( (field)=>
-        field?.trim()=="")
-      ){
-        throw new ApiError(400,"All fields are required")
-      }
-      
-      //check if user already exist:username or email
-     const existedUser= await User.findOne({
-        $or:[ {username},{email}]
-      })
-
-      if(existedUser){
-        throw new ApiError(409,"user name already exists")
-      }
-      //console.log(req.files);
-
-      //check for images,check for avtar
-      const avatarLocalPath=req.files?.avatar[0].path // here multer get path from temp/keep folder file
-        //const coverImageLocalPath = req.files?.coverImage[0]?.path;
-      let coverImageLocalPath;
-    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
-        coverImageLocalPath = req.files.coverImage[0].path
+    // Validation
+    if (!fullName?.trim() || !email?.trim() || !username?.trim() || !password?.trim()) {
+        throw new ApiError(400, "All fields are required");
     }
-    
 
+    // Check if user already exists: username or email
+    const existedUser = await User.findOne({
+        $or: [{ username }, { email }]
+    });
+
+    if (existedUser) {
+        throw new ApiError(409, "Username or email already exists");
+    }
+
+    // Check for avatar file
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
     if (!avatarLocalPath) {
-        throw new ApiError(400, "Avatar file is required")
+        throw new ApiError(400, "Avatar file is required");
     }
-    
-    //upload them in cloudary ,avtar
-    const avatar = await uploadOnCloudinary(avatarLocalPath)
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath)
-    if (!avatar) {
-        throw new ApiError(400, "Avatar file is required")
+    console.log(avatarLocalPath);
+
+    // Check for cover image file
+    let coverImageLocalPath;
+    if (req.files && Array.isArray(req.files.coverImage) && req.files.coverImage.length > 0) {
+        coverImageLocalPath = req.files.coverImage[0].path;
     }
 
-   //create object -create entry in db
+    // Upload avatar and cover image to Cloudinary
+    const avatar = await uploadOnCloudinary(avatarLocalPath);
+    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+
+    if (!avatar) {
+        throw new ApiError(400, "Error while uploading avatar");
+    }
+
+    // Create user object and save to DB
     const user = await User.create({
         fullName,
         avatar: avatar.url,
         coverImage: coverImage?.url || "",
-        email, 
+        email,
         password,
         username: username.toLowerCase()
-    })
-    
-    //remove password and refresh token field from response
-    const createdUser = await User.findById(user._id).select(//find user id and remmove refresh token and password
-        "-password -refreshToken"
-    )
-    //check our user creation
+    });
+
+    // Remove sensitive fields from response
+    const createdUser = await User.findById(user._id).select("-password -refreshToken");
+
     if (!createdUser) {
-        throw new ApiError(500, "Something went wrong while registering the user")
+        throw new ApiError(500, "Something went wrong while registering the user");
     }
 
-      //return response
+    // Return response
     return res.status(201).json(
-        new ApiResponse(200, createdUser, "User registered Successfully")
-    )
+        new ApiResponse(200, createdUser, "User registered successfully")
+    );
+});
 
-      
-
-
-
-
-      })
 const loginUser=asyncHandler(async(req,res) =>{
   //req body->data
   const {username,email,password}=req.body;
@@ -114,12 +100,12 @@ const loginUser=asyncHandler(async(req,res) =>{
     $or:[{username},{email}]
   })
   if(!user){
-    throw ApiError(404,"User does not exist");
+    throw new ApiError(404,"User does not exist");
   }
   //password check
   const isPasswordValid=await user.isPasswordCorrect(password)
   if(!isPasswordValid){
-    throw ApiError(401,"Invalid user password");
+    throw  new ApiError(401,"Invalid user password");
   }
   //access and referesh token
   const {accessToken,refreshToken}=await generateAccessAndRefereshTokens(user._id)
@@ -353,18 +339,18 @@ const getUserChannelProfile=asyncHandler(async(req,res) =>{
       }
     },
     {
-      $addFields:{
-        subscribersCount:{
-          $size:"$subscribers"
+      $addFields: {
+        subscribersCount: {
+          $size: { $ifNull: ["$subscribers", []] }
         },
-        channelsSubscribedToCount:{
-          $size:"subscribedTo"
+        channelsSubscribedToCount: {
+          $size: { $ifNull: ["$subscribedTo", []] }
         },
-        isSubscribed:{
-          $cond:{
-            if:{$in:[req.user?._id,"$subscribers.subscriber"]},
-            then:true,
-            else:false
+        isSubscribed: {
+          $cond: {
+            if: { $in: [req.user?._id, { $ifNull: ["$subscribers.subscriber", []] }] },
+            then: true,
+            else: false
           }
         }
       }
