@@ -3,7 +3,7 @@
 
 ## Overview
 
-This project is the backend for a YouTube-like application, providing a comprehensive set of features that allow users to register, log in, manage their profiles, and interact with video content. The backend is built using Node.js, Express, and MongoDB, and it utilizes JWT for authentication and Cloudinary for image uploads.
+This project is the backend for a video wall application, providing a comprehensive set of features that allow users to register, log in, manage their profiles, and interact with video content. The backend is built using Node.js, Express, and MongoDB, and it utilizes JWT for authentication and Cloudinary for image uploads.
 
 ## Features
 
